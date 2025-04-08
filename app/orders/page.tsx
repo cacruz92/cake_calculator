@@ -48,6 +48,9 @@ const OrderForm: React.FC = () => {
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
 
+  //State for popup window for submission
+  const[showPopup, setShowPopup] = useState(false);
+
   // Fetch available ingredients and recipes
   useEffect(() => {
     // Filler data until I connect database
@@ -171,12 +174,20 @@ const OrderForm: React.FC = () => {
     
     // once I connect database remove this line
     console.log('Submitting order:', orderData);
+
+    //Show the Popup
+    setShowPopup(true);
     
     // Reset form
-    setOrderName('');
-    setOrderDate(new Date().toISOString().split('T')[0]);
-    setNotes('');
-    setOrderItems([]);
+    setTimeout(() => {
+      setOrderName('');
+      setOrderDate(new Date().toISOString().split('T')[0]);
+      setNotes('');
+      setOrderItems([]);
+      setShowPopup(false);
+    }, 15000);
+
+    //After the above timeout, I want it to go to the order page. 
   };
 
   return (
@@ -221,9 +232,9 @@ const OrderForm: React.FC = () => {
               <div className="flex">
                 <button 
                   type="button"
-                  className={`px-4 py-2 text-sm font-medium ${selectedType === 'ingredient' 
-                    ? 'bg-primary-700 text-white' 
-                    : 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white'} rounded-l-lg`}
+                  className={`px-4 py-2 text-sm font-medium border ${selectedType === 'ingredient' 
+                    ? 'bg-blue-700 text-white border-blue-700' 
+                    : 'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200 border-gray-300'} rounded-l-lg`}
                   onClick={() => {
                     setSelectedType('ingredient');
                     setSelectedItemId(null);
@@ -233,9 +244,9 @@ const OrderForm: React.FC = () => {
                 </button>
                 <button 
                   type="button"
-                  className={`px-4 py-2 text-sm font-medium ${selectedType === 'recipe' 
-                    ? 'bg-primary-700 text-white' 
-                    : 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white'} rounded-r-lg`}
+                  className={`px-4 py-2 text-sm font-medium border ${selectedType === 'recipe' 
+                    ? 'bg-blue-700 text-white border-blue-700' 
+                    : 'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200 border-gray-300'} rounded-r-lg`}
                   onClick={() => {
                     setSelectedType('recipe');
                     setSelectedItemId(null);
@@ -371,12 +382,33 @@ const OrderForm: React.FC = () => {
           
           <button 
             type="submit" 
-            className="inline-flex items-center px-5 py-2.5 text-sm font-medium text-center text-white bg-primary-700 rounded-lg focus:ring-4 focus:ring-primary-200 dark:focus:ring-primary-900 hover:bg-primary-800"
+            className="inline-flex items-center px-5 py-2.5 text-sm font-medium text-center text-white bg-blue-700 rounded-lg focus:ring-4 focus:ring-primary-200 dark:focus:ring-primary-900 hover:bg-primary-800"
           >
             Create Order
           </button>
         </form>
       </div>
+
+      {showPopup && (
+        <div className='fixed inset-0 bg-gray-50 flex items-center justify-center z-50'>
+        <div className='bg-white p-6 rounded-lg shadow-lg text center'>
+          <h2 className='font-bold text-black-900'>Order Submitted</h2>
+          
+          <div>
+            <h3>Items:</h3>
+            <ul>
+              {orderItems.map((item,idx) => (
+                <li key={idx}>
+                  {item.quantity} x {item.name} (${item.unitPrice.toFixed(2)} each) - ${item.price.toFixed(2)}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+        </div>
+        </div>
+      )}
+
     </section>
   );
 };
