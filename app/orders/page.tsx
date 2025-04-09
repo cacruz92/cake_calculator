@@ -396,6 +396,10 @@ const OrderForm: React.FC = () => {
           
           <div>
             <h3>Items:</h3>
+            <p><span className='font-medium'>Order Name:</span>{orderName}</p>
+            <p><span className='font-medium'>Order Date:</span>{orderDate}</p>
+            <p><span className='font-medium'>Total Amount</span>${calculateTotal()}</p>
+            
             <ul>
               {orderItems.map((item,idx) => (
                 <li key={idx}>
