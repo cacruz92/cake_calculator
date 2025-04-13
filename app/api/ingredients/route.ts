@@ -24,9 +24,11 @@ export async function POST(request: Request) {
         //Establish a new database connection
         const client = await pool.connect();
 
+        const currentDate = new Date().toISOString().split('T')[0];
+
         //Execute SQL query to enter new ingredient to the database
         const res = await client.query(
-            'INSERT INTO ingredients (name, price, store, measurement_value, measurement_type, description) VALUES ($1, $2, $3, $4, $5) RETURNING *', [name, price, store, measurement_value, measurement_type, description]
+            'INSERT INTO ingredients (item_name, quantity, measurement_type, price, store, date_added, description) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *', [name, measurement_value, measurement_type, price, store, currentDate, description]
         );
 
         //Release the client
@@ -35,8 +37,8 @@ export async function POST(request: Request) {
         //Return the newly created ingredient info
         return NextResponse.json(
             {
-                ingredient_id: res.rows[0].ingredient_id,
-                name: res.rows[0].name,
+                id: res.rows[0].id,
+                item_name: res.rows[0].item_name,
                 message: 'Ingredient added successfully!'
             }, 
             { status: 201 }
