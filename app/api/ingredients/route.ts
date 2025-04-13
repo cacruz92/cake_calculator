@@ -24,26 +24,43 @@ export async function POST(request: Request) {
         //Establish a new database connection
         const client = await pool.connect();
 
-        const currentDate = new Date().toISOString().split('T')[0];
+        try{
+            //check for unique ingredient name
+            const checkExisting = await client.query(
+                'SELECT * FROM ingredients WHERE LOWER(item_name) = LOWER($1)', 
+                [name]
+            );
 
-        //Execute SQL query to enter new ingredient to the database
-        const res = await client.query(
-            'INSERT INTO ingredients (item_name, quantity, measurement_type, price, store, date_added, description) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *', [name, measurement_value, measurement_type, price, store, currentDate, description]
-        );
+            if (checkExisting.rows.length > 0) {
+                return NextResponse.json({ 
+                    error: 'That ingredient already exists! You can edit the ingredient below, but no duplicate ingredients please :)', 
+                    isDuplicate: true,
+                    existingItem: checkExisting.rows[0]
+                }, {status: 409});
+            }
 
-        //Release the client
-        client.release();
+            const currentDate = new Date().toISOString().split('T')[0];
 
-        //Return the newly created ingredient info
-        return NextResponse.json(
-            {
-                id: res.rows[0].id,
-                item_name: res.rows[0].item_name,
-                message: 'Ingredient added successfully!'
-            }, 
-            { status: 201 }
-        );
+            //Execute SQL query to enter new ingredient to the database
+            const res = await client.query(
+                'INSERT INTO ingredients (item_name, quantity, measurement_type, price, store, date_added, description) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *', [name, measurement_value, measurement_type, price, store, currentDate, description]
+            );
 
+            
+
+            //Return the newly created ingredient info
+            return NextResponse.json(
+                {
+                    id: res.rows[0].id,
+                    item_name: res.rows[0].item_name,
+                    message: 'Ingredient added successfully!'
+                }, 
+                { status: 201 }
+            );
+        } finally {
+            //Release the client
+            client.release();
+        }
     } catch (error) {
         console.error('Error submitting ingredient:', error);
         
