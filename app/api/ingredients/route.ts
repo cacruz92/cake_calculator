@@ -67,3 +67,25 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Internal Server Error' }, {status: 500})
     }
 }
+
+//GET Endpoint to get all ingredients
+
+
+export async function GET() {
+    try{
+        //Establish a new database connection
+        const client = await pool.connect();
+
+        try {
+            const res = await client.query(
+                'SELECT * FROM ingredients ORDER BY item_name'
+            );
+            return NextResponse.json(res.rows, { status: 200 });
+        } finally {
+            client.release();
+        }
+    } catch(error){
+        console.error('Error getting ingredients:', error);
+        return NextResponse.json({error: 'Failed getting ingredients'}, {status: 500})
+    }
+}

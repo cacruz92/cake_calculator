@@ -1,15 +1,26 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
+interface Ingredient {
+  id: number;
+  item_name: string;
+  quantity: number;
+  measurement_type: string;
+  price: number;
+  store: string;
+  date_added: string;
+  description: string;
+}
 
 const Ingredients: React.FC = () => {
 
   const[formData, setFormData] = useState({
     name: '',
-    price: '',
-    store: '',
     measurement_value: '',
     measurement_type: '',
+    price: '',
+    store: '',
     description: ''
   });
 
@@ -19,6 +30,30 @@ const Ingredients: React.FC = () => {
     isError: false
   });
 
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    fetchIngredients();
+  }, []);
+
+  const fetchIngredients = async () => {
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('api/ingredients');
+      if(!response.ok) {
+        throw new Error('Failed to load ingredients');
+      }
+      const data = await response.json();
+      setIngredients(data);
+    } catch (error){
+      console.error('Error loading ingredients:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData({
@@ -27,7 +62,7 @@ const Ingredients: React.FC = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus({ isSubmitting: true, message: '', isError: false })
 
@@ -71,10 +106,13 @@ const Ingredients: React.FC = () => {
           message: result.message || 'Ingredient added successfully!',
           isError: false
         });
+
+        //Refresh Ingredient List
+        fetchIngredients();
       } else {
         throw new Error(result.error || 'Something went wrong');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding ingredient:', error);
       setStatus({
         isSubmitting: false,
@@ -84,6 +122,39 @@ const Ingredients: React.FC = () => {
     }
 
   }
+
+  const formatMeasurement = (quantity: number, type: string) => {
+    const measurementMap: Record<string, string> = {
+      'tsp': 'teaspoon(s)',
+      'tbsp': 'tablespoon(s)',
+      'cup': 'cup(s)',
+      'floz': 'fluid ounce(s)',
+      'oz': 'ounce(s)',
+      'g': 'gram(s)',
+      'kg': 'kilogram(s)',
+      'ml': 'milliliter(s)',
+      'l': 'liter(s)',
+      'pint': 'pint(s)',
+      'quart': 'quart(s)',
+      'gallon': 'gallon(s)',
+      'unit': 'unit(s)',
+      'lb': 'pound(s)'
+    };
+    
+    const readableType = measurementMap[type] || type;
+    return `${quantity} ${readableType}`;
+  };
+
+  const formatPrice = (price: number | string) => {
+    const numericPrice = typeof price === 'string' ? parseFloat(price) : price;
+    
+    if (isNaN(numericPrice)) {
+      return '$0.00';
+    }
+    
+    return `$${numericPrice.toFixed(2)}`;
+  };
+
 
   return (
     <section className="bg-white dark:bg-gray-900">
@@ -153,6 +224,55 @@ const Ingredients: React.FC = () => {
             {status.isSubmitting ? 'Adding...' : 'Add Ingredient'}
           </button>
         </form>
+
+        <div className="mt-8">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Ingredients List</h2>
+          
+          {isLoading ? (
+            <div className="text-center py-4">Loading ingredients...</div>
+          ) : ingredients.length === 0 ? (
+            <div className="text-center py-4 text-gray-500">No ingredients added yet.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                  <tr>
+                    <th scope="col" className="px-4 py-3">Name</th>
+                    <th scope="col" className="px-4 py-3">Measurement</th>
+                    <th scope="col" className="px-4 py-3">Price</th>
+                    <th scope="col" className="px-4 py-3">Store</th>
+                    <th scope="col" className="px-4 py-3">Date Added</th>
+                    <th scope="col" className="px-4 py-3">Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ingredients.map((ingredient) => (
+                    <tr key={ingredient.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                      <td className="px-4 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                        {ingredient.item_name}
+                      </td>
+                      <td className="px-4 py-4">
+                        {formatMeasurement(ingredient.quantity, ingredient.measurement_type)}
+                      </td>
+                      <td className="px-4 py-4">
+                        {formatPrice(ingredient.price)}
+                      </td>
+                      <td className="px-4 py-4">
+                        {ingredient.store || '-'}
+                      </td>
+                      <td className="px-4 py-4">
+                        {new Date(ingredient.date_added).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-4">
+                        {ingredient.description || '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );
