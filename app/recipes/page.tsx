@@ -4,10 +4,10 @@ import React, { useState, useEffect } from 'react';
 
 interface Ingredient {
   id: number;
-  name: string;
+  item_name: string;
   price: number;
   store: string;
-  measurement_value: number;
+  quantity: number;
   measurement_type: string;
 }
 
@@ -30,17 +30,29 @@ const RecipeForm: React.FC = () => {
   const [currentIngredient, setCurrentIngredient] = useState<number | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [measurementType, setMeasurementType] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch available ingredients
   useEffect(() => {
     const fetchIngredients = async () => {
-      // Filler data until I connect database
-      const mockIngredients: Ingredient[] = [
-        { id: 1, name: 'Flour', price: 2.99, store: 'Grocery Store', measurement_value: 1000, measurement_type: 'g' },
-        { id: 2, name: 'Sugar', price: 3.49, store: 'Grocery Store', measurement_value: 500, measurement_type: 'g' },
-        { id: 3, name: 'Butter', price: 4.99, store: 'Grocery Store', measurement_value: 250, measurement_type: 'g' },
-      ];
-      setAvailableIngredients(mockIngredients);
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/ingredients');
+
+        if(!response.ok) {
+          throw new Error('Failed to fetch ingredients');
+        }
+
+        const data = await response.json();
+        setAvailableIngredients(data);
+        setError(null);
+      } catch (error){
+        console.error('Error fetching ingredients:', error);
+        setError('Failed to load ingredients');
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchIngredients();
@@ -57,8 +69,8 @@ const RecipeForm: React.FC = () => {
       inventory_id: ingredientToAdd.id,
       quantity,
       measurement_type: measurementType || ingredientToAdd.measurement_type,
-      price: (ingredientToAdd.price / ingredientToAdd.measurement_value) * quantity,
-      name: ingredientToAdd.name 
+      price: (ingredientToAdd.price / ingredientToAdd.quantity) * quantity,
+      name: ingredientToAdd.item_name 
     };
     
     setSelectedIngredients([...selectedIngredients, newRecipeIngredient]);
@@ -82,7 +94,7 @@ const RecipeForm: React.FC = () => {
   };
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Create recipe object
@@ -97,13 +109,43 @@ const RecipeForm: React.FC = () => {
       }))
     };
     
-    //placeholder until I finish setting up database
-    console.log('Submitting recipe:', recipeData);
+    //add the recipes to the database
+    try{
+      const response = await fetch('api/recipes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(recipeData),
+      });
+
+      if(!response.ok){
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create recipe');
+        //ADD SIMILAR STATUS MESSAGE TO THE INGREDIENTS COMPONENT SO THERE IS THE MESSAGE ACCROSS THE TOP
+      }
+
+
+
+
+      //ADD SIMILAR STATUS MESSAGE TO THE INGREDIENTS COMPONENT SO THERE IS THE MESSAGE ACCROSS THE TOP
+      //ADD SIMILAR STATUS MESSAGE TO THE INGREDIENTS COMPONENT SO THERE IS THE MESSAGE ACCROSS THE TOP
+      //ADD SIMILAR STATUS MESSAGE TO THE INGREDIENTS COMPONENT SO THERE IS THE MESSAGE ACCROSS THE TOP
+      //ADD SIMILAR STATUS MESSAGE TO THE INGREDIENTS COMPONENT SO THERE IS THE MESSAGE ACCROSS THE TOP
+      //ADD SIMILAR STATUS MESSAGE TO THE INGREDIENTS COMPONENT SO THERE IS THE MESSAGE ACCROSS THE TOP
+      //ADD SIMILAR STATUS MESSAGE TO THE INGREDIENTS COMPONENT SO THERE IS THE MESSAGE ACCROSS THE TOP
+
+
+      // Reset form
+      setRecipeName('');
+      setInstructions('');
+      setSelectedIngredients([]);
+    } catch (error){
+      console.error('Error adding recipe', error);
+      //ADD SIMILAR STATUS MESSAGE TO THE INGREDIENTS COMPONENT SO THERE IS THE MESSAGE ACCROSS THE TOP
+    }
     
-    // Reset form
-    setRecipeName('');
-    setInstructions('');
-    setSelectedIngredients([]);
+    
   };
 
   return (
@@ -143,7 +185,7 @@ const RecipeForm: React.FC = () => {
                 >
                   <option value="">Select ingredient</option>
                   {availableIngredients.map(ing => (
-                    <option key={ing.id} value={ing.id}>{ing.name}</option>
+                    <option key={ing.id} value={ing.id}>{ing.item_name}</option>
                   ))}
                 </select>
               </div>

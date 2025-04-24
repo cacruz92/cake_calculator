@@ -32,12 +32,12 @@ export async function POST(request: Request) {
                 'INSERT INTO recipes (recipe_name, instructions, date_created) VALUES ($1, $2, $3) RETURNING *', [recipe_name, instructions, currentDate]
             );
 
-            const recipeId = recipeResult.rows[0].id;
+            const recipeId = recipeResult.rows[0].recipe_id;
 
             // SQL query to enter the igredients into recipe_items table row by row
             for(const ingredient of ingredients){
                 await client.query(
-                    'INSERT INTO recipe_items ( recipe_id, ingredient_id, quantity, measurement_type, price ) VALUES ($1, $2, $3, $4, $5)', [recipeId, ingredient.id, ingredient.measurement_value, ingredient.measurement_type, ingredient.price]
+                    'INSERT INTO recipe_items (recipe_id, ingredient_id, quantity, measurement_type, price) VALUES ($1, $2, $3, $4, $5)', [recipeId, ingredient.inventory_id, ingredient.quantity, ingredient.measurement_type, ingredient.price]
                 )
             }
 
@@ -45,8 +45,8 @@ export async function POST(request: Request) {
             const totalCost = ingredients.reduce((sum, ingredient) => sum + Number(ingredient.price), 0);
             
             //add the total cost to the recipes table
-            await client.quey(
-                'UPDATE recipes SET total_cost = $1 WHERE id = $2',
+            await client.query(
+                'UPDATE recipes SET total_cost = $1 WHERE recipe_id = $2',
                 [totalCost, recipeId]
             )
 
